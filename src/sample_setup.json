@@ -1,8 +1,20 @@
 {
-    "strategy": "direct",
-    "prompts": [
-        "test prompt 1",
-        "test prompt 2"
+    "strategies": [
+        {
+            "strategy": "direct",
+            "prompts": [
+                "test prompt 1",
+                "test prompt 2"
+            ]
+        },
+        {
+            "strategy": "contrastive-iterative",
+            "prompts": [
+                "test prompt 1",
+                "test prompt 2",
+                "test prompt 3"
+            ]
+        }
     ],
     "dataset": "../tasks/",
     "model": "model name for results json, does not affect anything else"
