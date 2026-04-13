@@ -2,7 +2,7 @@ import os
 import pathlib
 import json
 
-from strategies import BenchmarkConfig, direct, BenchmarkResult, BongBench
+from benchmark import BenchmarkConfig, BenchmarkResult, BongBench
 
 
 def ask_model(prompt, image):
