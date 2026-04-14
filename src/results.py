@@ -6,6 +6,7 @@ from json import JSONDecodeError
 from pathlib import Path
 from typing import List, Dict
 
+
 class InferenceResultLoadError(ValueError):
     """Raised when InferenceResult cannot be loaded correctly."""
 

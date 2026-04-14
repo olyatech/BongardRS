@@ -33,12 +33,12 @@ class StrategySetup:
         instance = cls(**data)
         instance._check_prompts_len()
         return instance
-    
+
     @classmethod
     def _get_strategy_name(cls, data: dict[str, Any]) -> StrategyName:
         if "strategy" not in data.keys():
             raise ConfigError("Setup missing required keys: 'strategy'")
-        
+
         strategy = data["strategy"]
         try:
             strategy = StrategyName(strategy)
@@ -46,9 +46,8 @@ class StrategySetup:
             raise ConfigError(
                 f"Error during config load. Got invalid strategy '{strategy}'."
             ) from e
-        
-        return strategy
 
+        return strategy
 
     @classmethod
     def _validate_fields(cls, data: dict[str, Any]) -> None:
@@ -66,7 +65,7 @@ class StrategySetup:
                     f"Type mismatch in setup field '{f.name}': "
                     f"expected {f.type.__name__}, got {type(value).__name__}. Message from type checker: {str(e)}."
                 ) from None
-            
+
     def _check_prompts_len(self):
         required_len = PROMPTS_PER_STRATEGY[self.strategy]
         current_len = len(self.prompts)

@@ -77,7 +77,6 @@ def get_iterative_concept(
     return answer
 
 
-
 def strategy_func(func: StrategyFuncUnwrapped):
     @wraps(func)
     def inner(
