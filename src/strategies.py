@@ -77,12 +77,6 @@ def get_iterative_concept(
     return answer
 
 
-def check_prompts_len(prompts: List[str], required_len: int, strategy: str):
-    if len(prompts) != required_len:
-        raise ConfigError(
-            f"Invalid prompts list for strategy {strategy}: {required_len} propts required, got {len(prompts)}."
-        )
-
 
 def strategy_func(func: StrategyFuncUnwrapped):
     @wraps(func)
@@ -93,7 +87,6 @@ def strategy_func(func: StrategyFuncUnwrapped):
         dataset: Path,
     ) -> StrategyResult:
         strategy_name = func.__name__
-        check_prompts_len(prompts, PROMPTS_PER_STRATEGY[strategy_name], strategy_name)
         answers = func(ask_model, reload_context, prompts, dataset)
         return StrategyResult(strategy=strategy_name, prompts=prompts, answers=answers)
 

@@ -3,8 +3,7 @@
         {
             "strategy": "direct",
             "prompts": [
-                "test prompt 1",
-                "test prompt 2"
+                "test prompt 1"
             ]
         },
         {

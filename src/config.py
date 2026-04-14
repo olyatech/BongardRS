@@ -13,7 +13,7 @@ class ConfigError(ValueError):
     pass
 
 
-from strategies import StrategyName
+from strategies import StrategyName, PROMPTS_PER_STRATEGY
 
 
 @dataclass
@@ -28,8 +28,27 @@ class StrategySetup:
     @classmethod
     def from_dict(cls, data: Dict):
         """Load setup from dictionary."""
+        data["strategy"] = cls._get_strategy_name(data)
         cls._validate_fields(data)
-        return cls(**data)
+        instance = cls(**data)
+        instance._check_prompts_len()
+        return instance
+    
+    @classmethod
+    def _get_strategy_name(cls, data: dict[str, Any]) -> StrategyName:
+        if "strategy" not in data.keys():
+            raise ConfigError("Setup missing required keys: 'strategy'")
+        
+        strategy = data["strategy"]
+        try:
+            strategy = StrategyName(strategy)
+        except ValueError as e:
+            raise ConfigError(
+                f"Error during config load. Got invalid strategy '{strategy}'."
+            ) from e
+        
+        return strategy
+
 
     @classmethod
     def _validate_fields(cls, data: dict[str, Any]) -> None:
@@ -47,6 +66,14 @@ class StrategySetup:
                     f"Type mismatch in setup field '{f.name}': "
                     f"expected {f.type.__name__}, got {type(value).__name__}. Message from type checker: {str(e)}."
                 ) from None
+            
+    def _check_prompts_len(self):
+        required_len = PROMPTS_PER_STRATEGY[self.strategy]
+        current_len = len(self.prompts)
+        if current_len != required_len:
+            raise ConfigError(
+                f"Invalid prompts list for strategy {self.strategy}: {required_len} propts required, got {current_len}."
+            )
 
 
 @dataclass
@@ -108,11 +135,11 @@ class BenchmarkConfig:
         setups: List[StrategySetup] = []
         for i, raw in enumerate(setups_list):
             try:
-                setups.append(StrategySetup(**raw))
+                setups.append(StrategySetup.from_dict(raw))
             except Exception as e:
                 raise ConfigError(
                     f"Error during config loading. Invalid strategy setup at index {i}. {str(e)}"
-                ) from None
+                ) from e
 
         return setups
 
