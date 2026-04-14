@@ -4,9 +4,9 @@ from functools import wraps
 from logging import getLogger
 from pathlib import Path
 from tqdm import tqdm
-from typing import List, Dict, Optional, Iterable
+from typing import List, Dict
 
-from results import BenchmarkResult, StrategyResult, AnswerItem
+from results import StrategyResult, AnswerItem
 
 log = getLogger(__name__)
 

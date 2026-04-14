@@ -13,6 +13,29 @@
                 "test prompt 2",
                 "test prompt 3"
             ]
+        },
+        {
+            "strategy": "descriptive-direct",
+            "prompts": [
+                "test prompt 1",
+                "test prompt 2"
+            ]
+        },
+        {
+            "strategy": "descriptive-iterative",
+            "prompts": [
+                "test prompt 1",
+                "test prompt 2",
+                "test prompt 3",
+                "test prompt 4"
+            ]
+        },
+        {
+            "strategy": "contrastive-direct",
+            "prompts": [
+                "test prompt 1",
+                "test prompt 2"
+            ]
         }
     ],
     "dataset": "../tasks/",
