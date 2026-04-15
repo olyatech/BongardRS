@@ -24,6 +24,7 @@ class StrategyResult:
     strategy: str
     prompts: List[str]
     answers: List[AnswerItem]
+    skipped: List[str]
 
     @classmethod
     def from_dict(cls, dict_data: Dict):
@@ -47,6 +48,7 @@ class StrategyResult:
             prompts=dict_data["prompts"],
             strategy=dict_data["strategy"],
             answers=answers,
+            skipped=dict_data["skipped"]
         )
 
 

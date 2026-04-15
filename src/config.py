@@ -44,8 +44,8 @@ class StrategySetup:
             strategy = StrategyName(strategy)
         except ValueError as e:
             raise ConfigError(
-                f"Error during config load. Got invalid strategy '{strategy}'."
-            ) from e
+                f"Got invalid strategy '{strategy}'. {e}"
+            ) from None
 
         return strategy
 
@@ -97,7 +97,7 @@ class BenchmarkConfig:
             with path.open("r", encoding="utf-8") as f:
                 data = json.load(f)
         except JSONDecodeError as e:
-            raise ConfigError(f"Invalid JSON in setup file {path}: {e}") from e
+            raise ConfigError(f"Invalid JSON in setup file {path}: {e}") from None
 
         data["strategies"] = cls._load_setups(data["strategies"])
         data["dataset"] = cls._load_dataset_path(data["dataset"])
@@ -138,7 +138,7 @@ class BenchmarkConfig:
             except Exception as e:
                 raise ConfigError(
                     f"Error during config loading. Invalid strategy setup at index {i}. {str(e)}"
-                ) from e
+                ) from None
 
         return setups
 
