@@ -43,9 +43,7 @@ class StrategySetup:
         try:
             strategy = StrategyName(strategy)
         except ValueError as e:
-            raise ConfigError(
-                f"Got invalid strategy '{strategy}'. {e}"
-            ) from None
+            raise ConfigError(f"Got invalid strategy '{strategy}'. {e}") from None
 
         return strategy
 
@@ -63,7 +61,7 @@ class StrategySetup:
             except TypeCheckError as e:
                 raise ConfigError(
                     f"Type mismatch in setup field '{f.name}': "
-                    f"expected {f.type.__name__}, got {type(value).__name__}. Message from type checker: {str(e)}."
+                    f"expected {f.type}, got {type(value).__name__}. Message from type checker: {str(e)}."
                 ) from None
 
     def _check_prompts_len(self):
@@ -71,7 +69,7 @@ class StrategySetup:
         current_len = len(self.prompts)
         if current_len != required_len:
             raise ConfigError(
-                f"Invalid prompts list for strategy {self.strategy}: {required_len} propts required, got {current_len}."
+                f"Invalid prompts list for strategy {self.strategy}: {required_len} prompts required, got {current_len}."
             )
 
 
@@ -123,7 +121,7 @@ class BenchmarkConfig:
             except TypeCheckError as e:
                 raise ConfigError(
                     f"Error during loading a setup file. Type mismatch in setup field '{f.name}': "
-                    f"expected {f.type.__name__}, got {type(value).__name__}. Message from type checker: {str(e)}."
+                    f"expected {f.type}, got {type(value).__name__}. Message from type checker: {str(e)}."
                 ) from None
 
     @classmethod

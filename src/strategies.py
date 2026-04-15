@@ -54,6 +54,7 @@ def load_file(file: Path) -> Path:
         raise InvalidDataset(f"File {file} does not exist")
     return file
 
+
 def load_folder(folder: Path) -> List[Path]:
     if not folder.exists():
         raise InvalidDataset(f"Folder does not exist: {folder}")
@@ -101,25 +102,31 @@ def strategy_func(func: StrategyFuncUnwrapped):
             tasks_folders = load_folder(dataset)
         except InvalidDataset as e:
             log.error("Dataset folder missing: %s", e)
-            return StrategyResult(strategy=strategy_name, prompts=prompts, answers=[], skipped=[])
-        
+            return StrategyResult(
+                strategy=strategy_name, prompts=prompts, answers=[], skipped=[]
+            )
+
         answers = []
         skipped = []
-        for problem in tqdm(tasks_folders, desc=f"Benchmark for strategy {strategy_name:<25}", unit="problem",):
+        for problem in tqdm(
+            tasks_folders,
+            desc=f"Benchmark for strategy {strategy_name:<25}",
+            unit="problem",
+        ):
             reload_context()
 
             try:
                 answer = func(ask_model, reload_context, prompts, problem)
             except InvalidDataset as e:
-                log.error(
-                f"Error during solving problem {problem.name}: {str(e)}"
-                )
+                log.error(f"Error during solving problem {problem.name}: {str(e)}")
                 skipped.append(problem.name)
                 continue
 
             answers.append(AnswerItem(problem=problem.name, answer=answer))
-            
-        return StrategyResult(strategy=strategy_name, prompts=prompts, answers=answers, skipped=skipped)
+
+        return StrategyResult(
+            strategy=strategy_name, prompts=prompts, answers=answers, skipped=skipped
+        )
 
     return wrapper
 
@@ -148,7 +155,7 @@ def descriptive_direct(
     collage = load_file(problem / COLLAGE_NAME)
 
     lefts = load_folder(problem / "left")
-    rights = load_folder(problem / "right") 
+    rights = load_folder(problem / "right")
 
     lefts_desc = get_descriptions(lefts, ask_model, single_prompt)
     reload_context()
@@ -191,7 +198,7 @@ def contrastive_direct(
 
     collage = load_file(problem / COLLAGE_NAME)
     pairs = load_folder(problem / PAIRS_FOLDER)
-    
+
     pairs_decs = get_descriptions(pairs, ask_model, pair_prompt)
 
     return ask_model(collage_prompt.format(pairs_decs), collage)

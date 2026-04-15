@@ -48,7 +48,7 @@ class StrategyResult:
             prompts=dict_data["prompts"],
             strategy=dict_data["strategy"],
             answers=answers,
-            skipped=dict_data["skipped"]
+            skipped=dict_data["skipped"],
         )
 
 
