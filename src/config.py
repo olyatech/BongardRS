@@ -40,8 +40,10 @@ class StrategySetup:
     This  class holds the strategy name and its list of prompts.
 
     Example config fragment:
+    ```
         "strategy": "direct",
         "prompts": ["Describe this image."]
+    ```
     """
 
     strategy: StrategyName
@@ -126,13 +128,15 @@ class BenchmarkConfig:
     - and a list of per-strategy setups (``StrategySetup``).
 
     Example JSON config:
-          "model": "model name",
-          "dataset": "datasets/bongard",
-          "strategies": [
-            {"strategy": "direct", "prompts": ["sample prompt"]},
-            {"strategy": "descriptive-direct", "prompts": ["sample prompt 1",
-                                                           "sample prompt 2. left class: {}, right class: {}"]}
-          ]
+    ```
+    "model": "model name",
+    "dataset": "datasets/bongard",
+    "strategies": [
+      {"strategy": "direct", "prompts": ["sample prompt"]},
+      {"strategy": "descriptive-direct", "prompts": ["sample prompt 1",
+                                                     "sample prompt 2. left class: {}, right class: {}"]}
+    ]
+    ```
     """
 
     strategies: List[StrategySetup]

@@ -37,9 +37,11 @@ class BongBench:
     that defines strategies, prompts, and dataset path. See config structure in config.BenchmarkConfig info.
 
     Usage example:
+    ```
         config = BenchmarkConfig.load("config.json")
         bench = BongBench(config)
         result = bench.run(ask_model, reload_context)
+    ```
     """
 
     def __init__(self, config: BenchmarkConfig):

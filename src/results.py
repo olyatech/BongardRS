@@ -38,7 +38,10 @@ class AnswerItem:
     a text answer. This class bundles the problem identifier and the model’s answer.
 
     Example:
-        AnswerItem(problem="001", answer="Right side contains big objects, while left side contains small ones.")
+    ```
+        AnswerItem(problem="001", 
+                   answer="Right side contains big objects, while left side contains small ones.")
+    ```
     """
 
     problem: str
@@ -56,15 +59,15 @@ class StrategyResult:
     the strategy name and prompts used.
 
     Example JSON-like structure:
-        {
-          "strategy": "descriptive_direct",
-          "prompts": ["Describe the left side.", "Describe the right side."],
-          "answers": [
-            {"problem": "001", "answer": "Left: ..."},
-            {"problem": "002", "answer": "Left: ..."}
-          ],
-          "skipped": ["003"]  # could not be processed
-        }
+    ```
+        "strategy": "descriptive_direct",
+        "prompts": ["Describe the left side.", "Describe the right side."],
+        "answers": [
+            "problem": "001", "answer": "Left: ...",
+            "problem": "002", "answer": "Left: ..."
+        ],
+        "skipped": ["003"]
+    ```
     """
 
     strategy: str
@@ -128,7 +131,7 @@ class BenchmarkResult:
     - and a list of `StrategyResult` entries for each strategy executed.
 
     Example JSON-like structure:
-        {
+    ```
           "model": "my-model",
           "dataset": "datasets/bongard",
           "end_time": "2026-04-16T12:34:56.789000",
@@ -136,19 +139,19 @@ class BenchmarkResult:
             {
               "strategy": "direct",
               "prompts": ["..."],
-              "answers": [{problem="...",
-                           answer="..."}, ... ],
+              "answers": [{"problem" = "...",
+                           "answer" = "..."}, ... ],
               "skipped": []
             },
             {
               "strategy": "descriptive_direct",
               "prompts": ["...", "..."],
-              "answers": [{problem="...",
-                           answer="..."}, ... ],
+              "answers": [{"problem" = "...",
+                           "answer" = "..."}, ... ],
               "skipped": ["..."]
             }
           ]
-        }
+    ```
     """
 
     model: str
@@ -191,8 +194,10 @@ class BenchmarkResult:
             Path: the resolved path of the saved file.
 
         Example:
+        ```
             result = benchmark.run(...)
             saved_path = result.save_as_json("results.json")
+        ```
         """
         json_string = self.to_json(indent)
 
