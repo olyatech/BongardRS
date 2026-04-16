@@ -1,3 +1,9 @@
+"""Configuration module for the Bongard benchmark.
+
+Defines the structure of the benchmark configuration file (JSON) and the classes
+that parse, validate and store it for following usage in Bencmark run.
+"""
+
 import json
 
 from dataclasses import dataclass, fields
@@ -8,7 +14,15 @@ from typeguard import check_type, TypeCheckError
 
 
 class ConfigError(ValueError):
-    """Raised when benchmark config is invalid."""
+    """
+    Raised when the benchmark configuration is invalid or inconsistent.
+
+    Indicates errors in:
+    - JSON structure,
+    - missing or invalid fields,
+    - unknown strategy name,
+    - wrong prompt list length.
+    """
 
     pass
 
@@ -19,7 +33,15 @@ from strategies import StrategyName, PROMPTS_PER_STRATEGY
 @dataclass
 class StrategySetup:
     """
-    Configuration for one strategy of the benchmark.
+    Configuration for one strategy of the Bongard benchmark.
+
+    A strategy corresponds to a specific prompting method (e.g., ``direct``,
+    ``descriptive-direct``, check readme for more information).
+    This  class holds the strategy name and its list of prompts.
+
+    Example config fragment:
+        "strategy": "direct",
+        "prompts": ["Describe this image."]
     """
 
     strategy: StrategyName
@@ -27,7 +49,28 @@ class StrategySetup:
 
     @classmethod
     def from_dict(cls, data: Dict):
-        """Load setup from dictionary."""
+        """
+        Load a strategy setup from a dictionary (e.g., parsed JSON).
+
+        The strategy string is converted into a ``StrategyName`` enum member
+        and validated; the prompts list is validated for prompts amount.
+        Check available strategies at strategies.StrategyName, required len of list
+        with prompts at strategies.PROMPTS_PER_STRATEGY.
+
+        Args:
+            data (Dict[str, Any]):
+                A dictionary with keys:
+                - "strategy" (str): name of the prompting strategy (must be
+                one of the values in ``StrategyName``).
+                - "prompts" (List[str]): list of prompts used for that strategy.
+
+        Returns:
+            StrategySetup: the validated strategy configuration.
+
+        Raises:
+            ConfigError: if the dictionary is missing required keys, contains
+                an unknown strategy, or the prompts list has incorrect length.
+        """
         data["strategy"] = cls._get_strategy_name(data)
         cls._validate_fields(data)
         instance = cls(**data)
@@ -76,8 +119,20 @@ class StrategySetup:
 @dataclass
 class BenchmarkConfig:
     """
-    Top-level benchmark configuration.
-    Contains a list of per-strategy setups and global benchmark information.
+    Top-level configuration for the Bongard benchmark.
+
+    Contains:
+    - global information (model name and dataset path),
+    - and a list of per-strategy setups (``StrategySetup``).
+
+    Example JSON config:
+          "model": "model name",
+          "dataset": "datasets/bongard",
+          "strategies": [
+            {"strategy": "direct", "prompts": ["sample prompt"]},
+            {"strategy": "descriptive-direct", "prompts": ["sample prompt 1",
+                                                           "sample prompt 2. left class: {}, right class: {}"]}
+          ]
     """
 
     strategies: List[StrategySetup]
@@ -86,7 +141,24 @@ class BenchmarkConfig:
 
     @classmethod
     def load(cls, setup_path: str):
-        """Load Config from file"""
+        """
+        Load the benchmark configuration from a JSON file.
+
+        The file is parsed, validated, and converted into a ``BenchmarkConfig`` object
+        that can be passed to benchmark runner ``BongBench``.
+
+        Args:
+            setup_path (str):
+                Path to the JSON configuration file.
+
+        Returns:
+            BenchmarkConfig: the fully parsed and validated configuration.
+
+        Raises:
+            FileNotFoundError: if the file does not exist.
+            JSONDecodeError: if the file is not valid JSON.
+            ConfigError: if any part of the configuration is invalid or inconsistent.
+        """
         path = Path(setup_path)
         if not path.is_file():
             raise FileNotFoundError(f"Setup file not found as {path}")
@@ -109,6 +181,15 @@ class BenchmarkConfig:
 
     @classmethod
     def _validate_fields(cls, data: dict[str, Any]) -> None:
+        """
+        Validate that the top-level config dictionary has correct fields and types.
+
+        Args:
+            data (dict[str, Any]): the raw config dictionary.
+
+        Raises:
+            ConfigError: if any required field is missing or has a type mismatch.
+        """
         required_fields = {f.name for f in fields(cls)}
         missing = required_fields - set(data.keys())
         if missing:
@@ -126,6 +207,19 @@ class BenchmarkConfig:
 
     @classmethod
     def _load_setups(cls, setups_list: Any) -> List[StrategySetup]:
+        """
+        Convert a list of raw strategy setups into validated ``StrategySetup`` objects.
+
+        Args:
+            setups_list (Any):
+                A list of dictionaries as read from the JSON.
+
+        Returns:
+            List[StrategySetup]: the validated list of strategy setups.
+
+        Raises:
+            ConfigError: if ``setups_list`` is not a list, or if any setup is invalid.
+        """
         if not isinstance(setups_list, list):
             raise ConfigError("Invalid config: 'setups' must be a list")
 
@@ -142,7 +236,20 @@ class BenchmarkConfig:
 
     @classmethod
     def _load_dataset_path(cls, dataset_path) -> Path:
-        """Convert and validate dataset path."""
+        """
+        Convert and validate the dataset path given in the config.
+
+        Args:
+            dataset_path (Any):
+                The value of the ``dataset`` field from the JSON.
+
+        Returns:
+            Path: a ``pathlib.Path`` object pointing to the dataset directory.
+
+        Raises:
+            ConfigError: if the dataset path is absent, not a string, or does not
+                exist as a directory.
+        """
         if dataset_path is None:
             raise ConfigError(
                 "Error during config loading. Path to dataset is required in field 'dataset'."

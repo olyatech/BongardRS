@@ -24,3 +24,4 @@ if __name__ == "__main__":
 
     # load inference results
     results_from_json = BenchmarkResult.load_from_json_file("results.json")
+    results_from_json.print_stats()

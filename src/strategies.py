@@ -1,3 +1,23 @@
+"""
+Prompting strategies for the Bongard benchmark.
+
+This module defines:
+- `StrategyName`: the known strategy names (e.g., `direct`, `descriptive_direct`),
+- utilities like `load_file`, `load_folder`, `get_descriptions`, `get_iterative_concept`,
+- a decorator `strategy_func` that wraps per‑strategy implementations,
+- and the strategy functions `direct`, `descriptive_direct`, etc.,
+all of which are collected into the `STRATEGIES` registry.
+
+Typical use:
+- `BongBench` imports `STRATEGIES` and runs each strategy over the dataset.
+- Internally, `strategy_func` handles dataset iteration, progress logging, and error handling;
+  each strategy function only cares about how to solve a single `problem` folder.
+
+See:
+- `results.StrategyResult` and `BenchmarkResult` for output format.
+- `config.BenchmarkConfig` for how strategy names and prompts are configured.
+"""
+
 from collections.abc import Callable
 from enum import Enum
 from functools import wraps
@@ -22,6 +42,14 @@ StrategyFunc = Callable[
 
 
 class StrategyName(str, Enum):
+    """
+    Known strategy names for the Bongard benchmark.
+
+    Each value corresponds to a specific prompting method (e.g., `direct`
+    sends a single prompt to the model; `descriptive_direct` first describes
+    images one-by-one, then providing a whole concept based on descriptions.).
+    """
+
     DIRECT = "direct"
     DESCRIPTIVE_DIRECT = "descriptive-direct"
     DESCRIPTIVE_ITERATIVE = "descriptive-iterative"
@@ -50,12 +78,18 @@ class InvalidDataset(ValueError):
 
 
 def load_file(file: Path) -> Path:
+    """
+    Load a file path, ensuring it exists and is a file.
+    """
     if not file.is_file():
         raise InvalidDataset(f"File {file} does not exist")
     return file
 
 
 def load_folder(folder: Path) -> List[Path]:
+    """
+    Load a folder path, ensuring it exists and is a directory, then return its sorted contents.
+    """
     if not folder.exists():
         raise InvalidDataset(f"Folder does not exist: {folder}")
     if not folder.is_dir():
@@ -70,6 +104,9 @@ def load_folder(folder: Path) -> List[Path]:
 def get_descriptions(
     pics: List[Path], ask_model: Callable[[str, Path], str], prompt: str
 ) -> List[str]:
+    """
+    Ask the model to describe each image in `pics` using the same `prompt`.
+    """
     answers = []
     for pic in pics:
         answers.append(ask_model(prompt, pic))
@@ -80,6 +117,9 @@ def get_descriptions(
 def get_iterative_concept(
     pics: List[Path], ask_model: Callable[[str, Path], str], prompts: List[str]
 ) -> str:
+    """
+    Build an iterative concept over a sequence of images using the given prompts.
+    """
     answer = ask_model(prompts[0], pics[0])
     for pair in pics[1:-1]:
         answer = ask_model(prompts[1], pair)
@@ -89,6 +129,27 @@ def get_iterative_concept(
 
 
 def strategy_func(func: StrategyFuncUnwrapped):
+    """
+    Decorator that turns a per-problem prompting strategy function into a full dataset runner.
+
+    The wrapped `func` has signature:
+
+        (ask_model, reload_context, prompts, problem: Path) -> str
+
+    This decorator:
+    - loads the dataset directory,
+    - iterates over each problem folder,
+    - calls `func` for each problem, collecting `answers` and `skipped` problems,
+    - and returns a `StrategyResult` with the full log.
+
+    Args:
+        func (StrategyFuncUnwrapped):
+            A function that solves one problem (given ask_model, reload_context, prompts, and problem path).
+
+    Returns:
+        StrategyFunc: the decorated function that operates on the whole dataset and returns a StrategyResult.
+    """
+
     @wraps(func)
     def wrapper(
         ask_model: Callable[[str, Path], str],

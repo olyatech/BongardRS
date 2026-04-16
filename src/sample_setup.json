@@ -7,6 +7,12 @@
             ]
         },
         {
+            "strategy": "direct",
+            "prompts": [
+                "one more test prompt for direct can be tested"
+            ]
+        },
+        {
             "strategy": "contrastive-iterative",
             "prompts": [
                 "test prompt 1",
