@@ -7,7 +7,7 @@ from benchmark import BenchmarkConfig, BenchmarkResult, BongBench
 
 def ask_model(prompt, image):
     if image.exists():
-        return f"answer for image {image} and prompt {prompt}"
+        return f"answer for image `{image}` and prompt `{prompt}`"
     return "no image there :("
 
 
