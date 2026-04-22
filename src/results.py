@@ -39,7 +39,7 @@ class AnswerItem:
 
     Example:
     ```
-        AnswerItem(problem="001", 
+        AnswerItem(problem="001",
                    answer="Right side contains big objects, while left side contains small ones.")
     ```
     """

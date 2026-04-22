@@ -97,7 +97,7 @@ class BongBench:
 
         results: List[StrategyResult] = []
         checkpoint_dir_path: Optional[Path] = None
-        
+
         if checkpoint_dir:
             checkpoint_dir_path = Path(checkpoint_dir)
             checkpoint_dir_path.mkdir(parents=True, exist_ok=True)
@@ -122,7 +122,8 @@ class BongBench:
                         dataset=str(self.__config__.dataset),
                         results=results,
                     )
-                    partial_result.save_as_json(checkpoint_dir_path / f"checkpoint_{len(results)}.json")
+                    checkpoint_name = f"checkpoint_{partial_result.model}_{partial_result.end_time}.json"
+                    partial_result.save_as_json(checkpoint_dir_path / checkpoint_name)
 
         return BenchmarkResult(
             model=self.__config__.model,

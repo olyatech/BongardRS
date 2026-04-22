@@ -178,7 +178,7 @@ class BenchmarkConfig:
 
         cls._validate_fields(data)
 
-        field_names = {f.name for f in fields(cls)}
+        field_names = {f.name for f in fields(BenchmarkConfig)}
         init_kwargs = {name: data[name] for name in field_names}
 
         return cls(**init_kwargs)
