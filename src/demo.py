@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     config = BenchmarkConfig.load(config_path)
     benchmark = BongBench(config)
-    results = benchmark.run(ask_model, reload_model)
+    results = benchmark.run(ask_model, reload_model, checkpoint_dir="bench_checkpoints")
     results.save_as_json("results.json")
 
     # load inference results

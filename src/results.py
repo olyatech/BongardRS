@@ -177,7 +177,7 @@ class BenchmarkResult:
 
         return json_data
 
-    def save_as_json(self, file_path: str | None = None, indent=4):
+    def save_as_json(self, file_path: str | Path | None = None, indent=4):
         """
         Save the benchmark result to a JSON file.
 
@@ -185,7 +185,7 @@ class BenchmarkResult:
         the model name and end time.
 
         Args:
-            file_path (Optional[str]):
+            file_path (Optional[str | Path]):
                 Path to the JSON file. If None, a file name like
                 ``results_my-model_2026-04-16T123456.789000.json`` is used.
             indent (int): indentation level for the JSON file.

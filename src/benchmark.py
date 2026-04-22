@@ -63,6 +63,7 @@ class BongBench:
         ask_model: Callable[[str, Path], str],
         reload_context: Callable[[], None],
         strategies: Optional[Iterable[StrategyName]] = None,
+        checkpoint_dir: Optional[str] = None,
     ) -> BenchmarkResult:
         """
         Run the benchmark for one or more strategies.
@@ -81,6 +82,9 @@ class BongBench:
             strategies (Optional[Iterable[StrategyName]]):
                 The list of strategy names to run. If None (default), all strategies
                 defined in the config would be run.
+            checkpoint_dir (Optional[str]):
+                Directory path to save intermediate results. If None, no checkpointing
+                is performed.
 
         Returns:
             BenchmarkResult: results for all strategies, can be saved as json.
@@ -92,6 +96,12 @@ class BongBench:
             strategies = list(self.setups_by_strategy.keys())
 
         results: List[StrategyResult] = []
+        checkpoint_dir_path: Optional[Path] = None
+        
+        if checkpoint_dir:
+            checkpoint_dir_path = Path(checkpoint_dir)
+            checkpoint_dir_path.mkdir(parents=True, exist_ok=True)
+
         for strategy in strategies:
             if strategy not in StrategyName:
                 raise ValueError(
@@ -105,6 +115,14 @@ class BongBench:
                     ask_model, reload_context, setup.prompts, self.__config__.dataset
                 )
                 results.append(result)
+
+                if checkpoint_dir_path is not None:
+                    partial_result = BenchmarkResult(
+                        model=self.__config__.model,
+                        dataset=str(self.__config__.dataset),
+                        results=results,
+                    )
+                    partial_result.save_as_json(checkpoint_dir_path / f"checkpoint_{len(results)}.json")
 
         return BenchmarkResult(
             model=self.__config__.model,
