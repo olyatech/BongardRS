@@ -1,7 +1,3 @@
-import os
-import pathlib
-import json
-
 from benchmark import BenchmarkConfig, BenchmarkResult, BongBench
 
 
@@ -17,8 +13,10 @@ def reload_model():
 
 if __name__ == "__main__":
     # inference model
-    setup = BenchmarkConfig.load("sample_setup.json")
-    benchmark = BongBench(setup)
+    config_path = "../prompts/sample_config.json"
+
+    config = BenchmarkConfig.load(config_path)
+    benchmark = BongBench(config)
     results = benchmark.run(ask_model, reload_model)
     results.save_as_json("results.json")
 

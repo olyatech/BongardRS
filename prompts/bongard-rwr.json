@@ -1,0 +1,43 @@
+{
+    "strategies": [
+        {
+            "strategy": "direct",
+            "prompts": [
+                "You are a vision understanding module designed to provide short, clear and accurate answers. Your goal is to solve the provided Bongard Problem. What is the difference between the two sides of the problem?"
+            ]
+        },
+        {
+            "strategy": "contrastive-iterative",
+            "prompts": [
+                "You are a vision understanding module designed to provide short, clear and accurate answers. Your goal is to solve the provided Bongard Problem. You'll receive a sequence of image pairs. Each pair contains one image from the left and one from the right side of the problem. In each step compare the two images and refine the definitions of concepts that describe left and right sides of the problem. Your description should be as concise as possible. Focus on the most important details. The first pair will be provided in the next message.",
+                "",
+                "It was the last pair of images. What is the difference between the two sides of the problem?"
+            ]
+        },
+        {
+            "strategy": "descriptive-direct",
+            "prompts": [
+                "The provided image is a part of an abstract visual reasoning problem. Describe all crucial properties of the image. Your description should be as concise as possible. Focus on the most important details. The image is provided correctly. Respond only with descriptions.",
+                "You are a vision understanding module designed to provide short, clear and accurate answers. Your goal is to solve the provided Bongard Problem using descriptions of its images. LEFT IMAGES: {}. RIGHT IMAGES: {}. What is the difference between the two sides of the problem?"
+            ]
+        },
+        {
+            "strategy": "descriptive-iterative",
+            "prompts": [
+                "You'll receive a sequence of images that are a part of a single side of a Bongard Problem. The images will be provided one by one. Your goal is to find a common concept presented in all images. Your description should be as concise as possible. Focus on the most important details. Try to enhance the description of the concept after each image. The image is always provided correctly. Respond only to the specific request. The first image will be provided in the next message.",
+                "",
+                "That was the last image. Now provide your final answer.",
+                "You are a vision understanding module designed to provide short, clear and accurate answers. Your goal is to solve the provided Bongard Problem using descriptions of two sides of the problem. LEFT SIDE DESCRIPTION: {}. RIGHT SIDE DESCRIPTION: {}. What is the difference between the two sides of the problem?"
+            ]
+        },
+        {
+            "strategy": "contrastive-direct",
+            "prompts": [
+                "You are given two images extracted from the left and right side of a Bongard Problem, respectively. Your goal is to compare the images. Your comparison should be as concise as possible.",
+                "You are a vision understanding module designed to provide short, clear and accurate answers. Your goal is to solve the provided Bongard Problem using comparisons between pairs of images. Each pair contains one image from the left and one from the right side of the problem. COMPARISONS: {}. What is the difference between the two sides of the problem?"
+            ]
+        }
+    ],
+    "dataset": "../tasks/",
+    "model": "model name for results json, does not affect anything else"
+}
