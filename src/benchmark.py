@@ -22,7 +22,8 @@ from collections.abc import Callable
 from functools import wraps
 from logging import getLogger
 from pathlib import Path
-from typing import List, Dict, Optional, Iterable
+from typing import List, Dict, Optional, Iterable, Union
+from typeguard import check_type, TypeCheckError
 
 from results import BenchmarkResult, StrategyResult
 from config import BenchmarkConfig, StrategySetup
@@ -60,7 +61,7 @@ class BongBench:
 
     def run(
         self,
-        ask_model: Callable[[str, Path], str],
+        ask_model: Union[Callable[[str, Path], str], Callable[[str, List[Path]], str]],
         reload_context: Callable[[], None],
         strategies: Optional[Iterable[StrategyName]] = None,
         checkpoint_dir: Optional[str] = None,
@@ -73,9 +74,11 @@ class BongBench:
         in the config, all would be run.
 
         Args:
-            ask_model (Callable[[str, Path], str]):
-                A function that sends a text prompt and an image path to a model
-                and returns the model’s answer string.
+            ask_model (Callable[[str, Path], str] | Callable[[str, List[Path]], str]):
+                A function that sends a text prompt and an image path (list of pathes) to a model
+                and returns the model’s answer string. Supports both models that can 
+                process a single image or multiple image at once. For models that can process 
+                only one image per query, the range of available strategies is restricted.
             reload_context (Callable[[], None]):
                 A function that resets or reloads any context (e.g., clears a chat history)
                 before each problem is processed.

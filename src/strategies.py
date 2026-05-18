@@ -30,14 +30,22 @@ from results import StrategyResult, AnswerItem
 
 log = getLogger(__name__)
 
-StrategyFuncUnwrapped = Callable[
-    [Callable[[str, Path], str], Callable[[], None], List[str], Path],
+AskModelSingle = Callable[[str, Path], str]
+AskModelMulti = Callable[[str, List[Path]], str]
+
+StrategyFunc = Callable[
+    [AskModelMulti, Callable[[], None], List[str], Path],
+    StrategyResult,
+]
+
+StrategyFuncSingle = Callable[
+    [AskModelSingle, Callable[[], None], List[str], Path],
     str,
 ]
 
-StrategyFunc = Callable[
-    [Callable[[str, Path], str], Callable[[], None], List[str], Path],
-    StrategyResult,
+StrategyFuncMulti = Callable[
+    [AskModelMulti, Callable[[], None], List[str], Path],
+    str,
 ]
 
 
@@ -54,7 +62,9 @@ class StrategyName(str, Enum):
     DESCRIPTIVE_DIRECT = "descriptive-direct"
     DESCRIPTIVE_ITERATIVE = "descriptive-iterative"
     CONTRASTIVE_DIRECT = "contrastive-direct"
+    CONTRASTIVE_DIRECT_MULTIIMAGE = "contrastive-direct-multiimage"
     CONTRASTIVE_ITERATIVE = "contrastive-iterative"
+    CONTRASTIVE_ITERATIVE_MULTIIMAGE = "contrastive-iterative-multiimage"
 
 
 PROMPTS_PER_STRATEGY: Dict[StrategyName, int] = {
@@ -62,7 +72,9 @@ PROMPTS_PER_STRATEGY: Dict[StrategyName, int] = {
     StrategyName.DESCRIPTIVE_DIRECT: 2,
     StrategyName.DESCRIPTIVE_ITERATIVE: 4,
     StrategyName.CONTRASTIVE_DIRECT: 2,
+    StrategyName.CONTRASTIVE_DIRECT_MULTIIMAGE: 2,
     StrategyName.CONTRASTIVE_ITERATIVE: 3,
+    StrategyName.CONTRASTIVE_ITERATIVE_MULTIIMAGE: 3,
 }
 
 COLLAGE_NAME = "collage.png"
@@ -101,11 +113,11 @@ def load_folder(folder: Path) -> List[Path]:
     return files
 
 
-def get_descriptions(
-    pics: List[Path], ask_model: Callable[[str, Path], str], prompt: str
+def get_descriptions[T: (Path, List[Path])](
+    pics: List[T], ask_model: Callable[[str, T], str], prompt: str
 ) -> List[str]:
     """
-    Ask the model to describe each image in `pics` using the same `prompt`.
+    Ask the model to describe each image (or a list of images) in `pics` using the same `prompt`.
     """
     answers = []
     for pic in pics:
@@ -114,21 +126,42 @@ def get_descriptions(
     return answers
 
 
-def get_iterative_concept(
-    pics: List[Path], ask_model: Callable[[str, Path], str], prompts: List[str]
+def get_iterative_concept[T: (Path, List[Path])](
+    pics: List[T], ask_model: Callable[[str, T], str], prompts: List[str]
 ) -> str:
     """
-    Build an iterative concept over a sequence of images using the given prompts.
+    Build an iterative concept over a sequence of images (or a lists of images) using the given prompts.
     """
     answer = ask_model(prompts[0], pics[0])
-    for pair in pics[1:-1]:
-        answer = ask_model(prompts[1], pair)
+    for next in pics[1:-1]:
+        answer = ask_model(prompts[1], next)
 
     answer = ask_model(prompts[2], pics[-1])
     return answer
 
 
-def strategy_func(func: StrategyFuncUnwrapped):
+def suitable_for_single_image_model(func: StrategyFuncSingle) -> StrategyFuncMulti:
+    """
+    Mark a strategy as compatible with single-image models.
+    """
+    setattr(func, "_suitable_for_single_image", True)
+
+    @wraps(func)
+    def wrapper(
+        ask_model: AskModelMulti,
+        reload_context: Callable[[], None],
+        prompts: List[str],
+        problem: Path,
+    ) -> str:
+        def ask_model_single(prompt: str, image: Path) -> str:
+            return ask_model(prompt, [image])
+
+        return func(ask_model_single, reload_context, prompts, problem)
+
+    return wrapper
+
+
+def strategy_func(func: StrategyFuncMulti) -> StrategyFunc:
     """
     Decorator that turns a per-problem prompting strategy function into a full dataset runner.
 
@@ -152,7 +185,7 @@ def strategy_func(func: StrategyFuncUnwrapped):
 
     @wraps(func)
     def wrapper(
-        ask_model: Callable[[str, Path], str],
+        ask_model: AskModelMulti,
         reload_context: Callable[[], None],
         prompts: List[str],
         dataset: Path,
@@ -193,6 +226,7 @@ def strategy_func(func: StrategyFuncUnwrapped):
 
 
 @strategy_func
+@suitable_for_single_image_model
 def direct(
     ask_model: Callable[[str, Path], str],
     reload_context: Callable[[], None],
@@ -204,6 +238,7 @@ def direct(
 
 
 @strategy_func
+@suitable_for_single_image_model
 def descriptive_direct(
     ask_model: Callable[[str, Path], str],
     reload_context: Callable[[], None],
@@ -226,6 +261,7 @@ def descriptive_direct(
 
 
 @strategy_func
+@suitable_for_single_image_model
 def descriptive_iterative(
     ask_model: Callable[[str, Path], str],
     reload_context: Callable[[], None],
@@ -248,6 +284,7 @@ def descriptive_iterative(
 
 
 @strategy_func
+@suitable_for_single_image_model
 def contrastive_direct(
     ask_model: Callable[[str, Path], str],
     reload_context: Callable[[], None],
@@ -266,6 +303,32 @@ def contrastive_direct(
 
 
 @strategy_func
+def contrastive_direct_multiimage(
+    ask_model: Callable[[str, List[Path]], str],
+    reload_context: Callable[[], None],
+    prompts: List[str],
+    problem: Path,
+) -> str:
+    pair_prompt = prompts[0]
+    collage_prompt = prompts[1]
+
+    lefts = load_folder(problem / "left")
+    rights = load_folder(problem / "right")
+    collage = load_file(problem / COLLAGE_NAME)
+
+    if len(lefts) != len(rights):
+        raise InvalidDataset(
+            f"Left and right classes have different amount of images. Left has {len(lefts)} while right has {len(rights)}."
+        )
+
+    pairs = [[left, right] for (left, right) in zip(lefts, rights)]
+    pairs_decs = get_descriptions(pairs, ask_model, pair_prompt)
+
+    return ask_model(collage_prompt.format(pairs_decs), collage)
+
+
+@strategy_func
+@suitable_for_single_image_model
 def contrastive_iterative(
     ask_model: Callable[[str, Path], str],
     reload_context: Callable[[], None],
@@ -276,10 +339,31 @@ def contrastive_iterative(
     return get_iterative_concept(pairs, ask_model, prompts)
 
 
+@strategy_func
+def contrastive_iterative_multiimage(
+    ask_model: Callable[[str, List[Path]], str],
+    reload_context: Callable[[], None],
+    prompts: List[str],
+    problem: Path,
+) -> str:
+    lefts = load_folder(problem / "left")
+    rights = load_folder(problem / "right")
+
+    if len(lefts) != len(rights):
+        raise InvalidDataset(
+            f"Left and right classes have different amount of images. Left has {len(lefts)} while right has {len(rights)}."
+        )
+
+    pairs = [[left, right] for (left, right) in zip(lefts, rights)]
+    return get_iterative_concept(pairs, ask_model, prompts)
+
+
 STRATEGIES: Dict[StrategyName, StrategyFunc] = {
     StrategyName.DIRECT: direct,
     StrategyName.DESCRIPTIVE_DIRECT: descriptive_direct,
     StrategyName.DESCRIPTIVE_ITERATIVE: descriptive_iterative,
     StrategyName.CONTRASTIVE_DIRECT: contrastive_direct,
+    StrategyName.CONTRASTIVE_DIRECT_MULTIIMAGE: contrastive_direct_multiimage,
     StrategyName.CONTRASTIVE_ITERATIVE: contrastive_iterative,
+    StrategyName.CONTRASTIVE_ITERATIVE_MULTIIMAGE: contrastive_iterative_multiimage,
 }
