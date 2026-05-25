@@ -4,7 +4,7 @@ Prompting strategies for the Bongard benchmark.
 This module defines:
 - `StrategyName`: the known strategy names (e.g., `direct`, `descriptive_direct`),
 - utilities like `load_file`, `load_folder`, `get_descriptions`, `get_iterative_concept`,
-- a decorator `strategy_func` that wraps per‑strategy implementations,
+- a decorator `strategy_func` that wraps per-strategy implementations,
 - and the strategy functions `direct`, `descriptive_direct`, etc.,
 all of which are collected into the `STRATEGIES` registry.
 
@@ -138,6 +138,17 @@ def get_iterative_concept[T: (Path, List[Path])](
 
     answer = ask_model(prompts[2], pics[-1])
     return answer
+
+
+def singleimage_to_multiimage(func: AskModelSingle) -> AskModelMulti:
+    """
+    Wrap a single-image model to fit the multiimage signature. 
+    Warning: this wouldn't add new functionality, just calls the model with prompt and a first image.
+    """
+    @wraps(func)
+    def wrapper(prompt: str, images: List[Path]) -> str:
+        return func(prompt, images[0])
+    return wrapper
 
 
 def suitable_for_single_image_model(func: StrategyFuncSingle) -> StrategyFuncMulti:
@@ -324,7 +335,7 @@ def contrastive_direct_multiimage(
     pairs = [[left, right] for (left, right) in zip(lefts, rights)]
     pairs_decs = get_descriptions(pairs, ask_model, pair_prompt)
 
-    return ask_model(collage_prompt.format(pairs_decs), collage)
+    return ask_model(collage_prompt.format(pairs_decs), [collage])
 
 
 @strategy_func

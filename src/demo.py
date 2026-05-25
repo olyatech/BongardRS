@@ -1,10 +1,18 @@
+from typing import List
+from pathlib import Path
+
 from benchmark import BenchmarkConfig, BenchmarkResult, BongBench
+from strategies import StrategyName
 
 
-def ask_model(prompt, image):
+def ask_model(prompt: str, image: Path):
     if image.exists():
         return f"answer for image `{image}` and prompt `{prompt}`"
     return "no image there :("
+
+
+def ask_model_multiimage(prompt: str, images: List[Path]) -> str:
+    return "answer from multi-image model"
 
 
 def reload_model():
@@ -17,7 +25,23 @@ if __name__ == "__main__":
 
     config = BenchmarkConfig.load(config_path)
     benchmark = BongBench(config)
-    results = benchmark.run(ask_model, reload_model, checkpoint_dir="bench_checkpoints")
+
+    # run for single-image model
+    results = benchmark.run(
+        ask_model,
+        reload_model,
+        checkpoint_dir="bench_checkpoints",
+        strategies=[StrategyName.CONTRASTIVE_ITERATIVE, StrategyName.CONTRASTIVE_DIRECT],
+    )
+    results.save_as_json("results.json")
+
+    # run for multi-image model
+    results = benchmark.run_multiimage(
+        ask_model_multiimage,
+        reload_model,
+        checkpoint_dir="bench_checkpoints",
+        strategies=[StrategyName.CONTRASTIVE_DIRECT_MULTIIMAGE, StrategyName.CONTRASTIVE_ITERATIVE_MULTIIMAGE],
+    )
     results.save_as_json("results.json")
 
     # load inference results

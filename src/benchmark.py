@@ -27,7 +27,7 @@ from typeguard import check_type, TypeCheckError
 
 from results import BenchmarkResult, StrategyResult
 from config import BenchmarkConfig, StrategySetup
-from strategies import StrategyName, STRATEGIES
+from strategies import StrategyName, STRATEGIES, singleimage_to_multiimage
 
 
 class BongBench:
@@ -61,7 +61,7 @@ class BongBench:
 
     def run(
         self,
-        ask_model: Union[Callable[[str, Path], str], Callable[[str, List[Path]], str]],
+        ask_model: Callable[[str, Path], str],
         reload_context: Callable[[], None],
         strategies: Optional[Iterable[StrategyName]] = None,
         checkpoint_dir: Optional[str] = None,
@@ -74,11 +74,96 @@ class BongBench:
         in the config, all would be run.
 
         Args:
-            ask_model (Callable[[str, Path], str] | Callable[[str, List[Path]], str]):
+            ask_model (Callable[[str, Path], str]):
+                A function that sends a text prompt and an image path to a model
+                and returns the model’s answer string. Supports only strategies that
+                process one image per prompt. For multi-image strategies check `BongBench.run_multiimage`.
+            reload_context (Callable[[], None]):
+                A function that resets or reloads any context (e.g., clears a chat history)
+                before each problem is processed.
+            strategies (Optional[Iterable[StrategyName]]):
+                The list of strategy names to run. If None (default), all strategies
+                defined in the config would be run.
+            checkpoint_dir (Optional[str]):
+                Directory path to save intermediate results. If None, no checkpointing
+                is performed.
+
+        Returns:
+            BenchmarkResult: results for all strategies, can be saved as json.
+
+        Raises:
+            ValueError: if a strategy name is not known (not in ``StrategyName``).
+        """
+        if strategies is None:
+            strategies = list(self.setups_by_strategy.keys())
+
+        results: List[StrategyResult] = []
+        checkpoint_dir_path: Optional[Path] = None
+
+        multi_ask_model = singleimage_to_multiimage(ask_model)
+
+        if checkpoint_dir:
+            checkpoint_dir_path = Path(checkpoint_dir)
+            checkpoint_dir_path.mkdir(parents=True, exist_ok=True)
+
+        for strategy in strategies:
+            if strategy not in StrategyName:
+                raise ValueError(
+                    f"Error during benchmark run. Unknown strategy: {strategy} (was set up in config)."
+                )
+
+            strategy_func = STRATEGIES[strategy]
+
+            if not getattr(strategy_func, "_suitable_for_single_image", False):
+                raise ValueError(
+                    f"Strategy `{strategy}` is not compatible with a single-image model; "
+                    "use a single-image compatible strategy or a multi-image model."
+                )
+
+            for setup in self.setups_by_strategy[strategy]:
+                result = strategy_func(
+                    multi_ask_model,
+                    reload_context,
+                    setup.prompts,
+                    self.__config__.dataset,
+                )
+                results.append(result)
+
+                if checkpoint_dir_path is not None:
+                    partial_result = BenchmarkResult(
+                        model=self.__config__.model,
+                        dataset=str(self.__config__.dataset),
+                        results=results,
+                    )
+                    checkpoint_name = f"checkpoint_{partial_result.model}_{partial_result.end_time}.json"
+                    partial_result.save_as_json(checkpoint_dir_path / checkpoint_name)
+
+        return BenchmarkResult(
+            model=self.__config__.model,
+            dataset=str(self.__config__.dataset),
+            results=results,
+        )
+
+    def run_multiimage(
+        self,
+        ask_model: Callable[[str, List[Path]], str],
+        reload_context: Callable[[], None],
+        strategies: Optional[Iterable[StrategyName]] = None,
+        checkpoint_dir: Optional[str] = None,
+    ) -> BenchmarkResult:
+        """
+        Run the benchmark for one or more strategies.
+
+        Each strategy is executed against all problems in the dataset defined in the
+        configuration. Multiple prompt setups for the same strategy may be present
+        in the config, all would be run.
+
+        Args:
+            ask_model (Callable[[str, List[Path]], str]):
                 A function that sends a text prompt and an image path (list of pathes) to a model
-                and returns the model’s answer string. Supports both models that can 
-                process a single image or multiple image at once. For models that can process 
-                only one image per query, the range of available strategies is restricted.
+                and returns the model’s answer string. Supports only models that can
+                process multiple image at once. For models that can process
+                only one image per query see `BongBench.run`.
             reload_context (Callable[[], None]):
                 A function that resets or reloads any context (e.g., clears a chat history)
                 before each problem is processed.
